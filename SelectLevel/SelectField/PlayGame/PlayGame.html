@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Play Game</title>
+  <link rel="stylesheet" href="PlayGame.css">
+</head>
+<body>
+  <div class="container" id="gameContainer">
+    <!-- 上部情報 -->
+    <div id="infoBar">
+      <span id="txtLevel"></span>
+      <span id="txtAssist"></span>
+      <span id="txtTimer"></span>
+      <span id="txtMiss"></span>
+    </div>
+    
+    <div id="areaMain">
+      <!-- 左：パズル -->
+      <div id="areaPuzzle"></div>
+      <!-- 右：選択 + メモ（縦並び） -->
+      <div id="areaRight">
+        <div id="areaSelect">
+          <div id="selectNumbers"></div>
+          <button id="btnDelete">Delete</button>
+        </div>
+        <div id="areaMemo">
+          <div id="memoNumbers"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="PlayGame.js"></script>
+</body>
+</html>
+
+<!--http://127.0.0.1:3000/login.html-->
