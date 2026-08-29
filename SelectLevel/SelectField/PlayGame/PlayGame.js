@@ -63,7 +63,13 @@ const PlayGame = (() => {
     makeSelectNumbers: function () {
       const box = document.getElementById("selectNumbers");
       const n = Math.sqrt(fieldSize); // 例: 16 → 4
-      box.style.gridTemplateColumns = `repeat(${n}, 1fr)`; // ★ n列にする
+      // 
+      // ★ 追加：桁数を考慮したボタンサイズを計算し、CSS変数に反映
+      const btnPx = this.calcButtonSize(fieldSize);
+      box.style.setProperty("--btn-size", `${btnPx}px`);
+      box.style.gridTemplateColumns = `repeat(${n}, var(--btn-size))`;
+      box.style.gridTemplateRows = `repeat(${n}, var(--btn-size))`;
+      
       for (let i = 1; i <= fieldSize; i++) {
         const btn = document.createElement("div");
         btn.className = "numBtn";
@@ -78,6 +84,7 @@ const PlayGame = (() => {
     handleSelectNumber: function (n) {
       if (!selectedCell) return;
       // ★ ロックされているセルは変更禁止
+
       if (selectedCell.classList.contains("fixed") ||
           selectedCell.classList.contains("locked")) {
             return;
@@ -99,7 +106,36 @@ const PlayGame = (() => {
       if (isCorrect) {
         // ★ 正しい → 青色
         selectedCell.textContent = n;
-        selectedCell.style.color = "#0000FF";
+        switch(fieldSize)
+        {
+          case 4:
+            selectedCell.style.color = "#f6c400";
+            break;
+          case 9:
+            selectedCell.style.color = "#4cff38";
+            break;
+          case 16:
+            selectedCell.style.color = "#0cf4d1";
+            break;
+          case 25:
+            selectedCell.style.color = "#1f9aff";
+            break;
+          case 36:
+            selectedCell.style.color = "#5825f3";
+            break;
+          case 49:
+            selectedCell.style.color = "#d61feb";
+            break;
+          case 64:
+            selectedCell.style.color = "#f9147f";
+            break;
+          case 81:
+            selectedCell.style.color = "#fe5319";
+            break;
+          case 100:
+            selectedCell.style.color = "#ff0b0b";
+            break;
+        }
         selectedCell.style.fontWeight = "bold";
         selectedCell.classList.add("locked");
       }
@@ -107,7 +143,8 @@ const PlayGame = (() => {
       {
         // ★ 間違い → 赤色
         selectedCell.textContent = n;
-        selectedCell.style.color = "#FF0000";
+        selectedCell.style.color = "#FFF";
+        selectedCell.style.backgroundColor = "#000";
         selectedCell.style.fontWeight = "bold";
         
         missCount++;
@@ -129,8 +166,13 @@ const PlayGame = (() => {
       const puzzle = this.generatePuzzle(solution, level);
       
       const puzzleArea = document.getElementById("areaPuzzle");
+      
+      // ★ 追加：fieldSize に応じてセルサイズ(px)を決定
+      const cellPx = this.calcCellSize(fieldSize);
+      puzzleArea.style.setProperty("--cell-size", `${cellPx}px`);
       puzzleArea.style.display = "grid";
-      puzzleArea.style.gridTemplateColumns = `repeat(${fieldSize}, 1fr)`;
+      puzzleArea.style.gridTemplateColumns = `repeat(${fieldSize}, var(--cell-size))`;
+      puzzleArea.style.gridTemplateRows = `repeat(${fieldSize}, var(--cell-size))`;
       
       for (let r = 0; r < fieldSize; r++) {
         for (let c = 0; c < fieldSize; c++) {
@@ -140,15 +182,11 @@ const PlayGame = (() => {
           const value = puzzle[r][c];
           
           // ★ ブロック境界（太枠）
-          // ブロック開始（既存）
           if (r % n === 0) cell.classList.add("block-top");
           if (c % n === 0) cell.classList.add("block-left");
-          
-          // ★ ブロック終端（新規）
           if ((r + 1) % n === 0) cell.classList.add("block-bottom");
           if ((c + 1) % n === 0) cell.classList.add("block-right");
           
-          // ★ Assist 用の座標
           cell.dataset.row = r;
           cell.dataset.col = c;
           
@@ -156,15 +194,13 @@ const PlayGame = (() => {
             cell.textContent = value;
             cell.classList.add("fixed");
             
-            // ★ 数字ありセルもフォーカス対象にする
             cell.addEventListener("click", () => {
               selectedCell = cell;
               
               this.clearFocus();
               this.applyFocus(cell);
               this.highlightSelectedCell(cell);
-              // Assist を使うならここで this.applyAssist(cell); を呼んでもOK
-              this.updateMemoButtons();   // ★ 追加
+              this.updateMemoButtons();
             });
           }
           else
@@ -172,11 +208,9 @@ const PlayGame = (() => {
             cell.textContent = "";
             cell.addEventListener("click", () => {
               selectedCell = cell;
-              
-              this.updateMemoButtons();   // ★ 追加
-              this.clearFocus();        // ★ 追加：前の強調を消す
-              this.applyFocus(cell);    // ★ 追加：今回の強調を適用
-
+              this.updateMemoButtons();
+              this.clearFocus();
+              this.applyFocus(cell);
               this.clearAssist();
               this.highlightSelectedCell(cell);
               this.applyAssist(cell);
@@ -189,6 +223,19 @@ const PlayGame = (() => {
       this.puzzle = puzzle;
       return this;
     },
+    // ★ 新規追加：fieldSize に応じた1セルあたりの px サイズを返す
+    calcCellSize: function (fieldSize) {
+      // 小さい盤面は大きく、大きい盤面は最低限の可読サイズを確保
+      if (fieldSize <= 4)  return 90;
+      if (fieldSize <= 9)  return 60;
+      if (fieldSize <= 16) return 48;
+      if (fieldSize <= 25) return 40;
+      if (fieldSize <= 36) return 34;
+      if (fieldSize <= 49) return 30;
+      if (fieldSize <= 64) return 27;
+      if (fieldSize <= 81) return 25;
+      return 22; // 100×100 など
+    },
     updateMemoButtons: function() {
       const memos = selectedCell.dataset.memo
       ? selectedCell.dataset.memo.split(",").map(Number)
@@ -196,7 +243,36 @@ const PlayGame = (() => {
       
       document.querySelectorAll(".memoBtn").forEach(btn => {
         const num = Number(btn.textContent);
-        btn.style.backgroundColor = memos.includes(num) ? "#00FF00" : "";
+        switch(fieldSize)
+        {
+          case 4:
+            btn.style.backgroundColor = memos.includes(num) ? "#f6c400" : "";
+            break;
+          case 9:
+            btn.style.backgroundColor = memos.includes(num) ? "#4cff38" : "";
+            break;
+          case 16:
+            btn.style.backgroundColor = memos.includes(num) ? "#0cf4d1" : "";
+            break;
+          case 25:
+            btn.style.backgroundColor = memos.includes(num) ? "#1f9aff" : "";
+            break;
+          case 36:
+            btn.style.backgroundColor = memos.includes(num) ? "#5825f3" : "";
+            break;
+          case 49:
+            btn.style.backgroundColor = memos.includes(num) ? "#d61feb" : "";
+            break;
+          case 64:
+            btn.style.backgroundColor = memos.includes(num) ? "#f9147f" : "";
+            break;
+          case 81:
+            btn.style.backgroundColor = memos.includes(num) ? "#fe5319" : "";
+            break;
+          case 100:
+            btn.style.backgroundColor = memos.includes(num) ? "#ff0b0b" : "";
+            break;
+        }
       });
     },
     // n×n ブロック → n^2 × n^2 の盤面
@@ -383,15 +459,18 @@ const PlayGame = (() => {
     // -----------------------------
     makeMemoNumbers: function () {
       const box = document.getElementById("memoNumbers");
-      
       const n = Math.sqrt(fieldSize);
-      box.style.gridTemplateColumns = `repeat(${n}, 1fr)`; // ★ n列にする
+      
+      // ★ 追加：Selectと同じ基準でサイズを揃える
+      const btnPx = this.calcButtonSize(fieldSize);
+      box.style.setProperty("--btn-size", `${btnPx}px`);
+      box.style.gridTemplateColumns = `repeat(${n}, var(--btn-size))`;
+      box.style.gridTemplateRows = `repeat(${n}, var(--btn-size))`;
       
       for (let i = 1; i <= fieldSize; i++) {
         const btn = document.createElement("div");
         btn.className = "memoBtn";
         btn.textContent = i;
-        
         btn.addEventListener("click", () => {
           this.handleMemoNumber(i);
         });
@@ -422,11 +501,52 @@ const PlayGame = (() => {
         }
         
         selectedCell.dataset.memo = memos.join(",");
-        selectedCell.style.backgroundColor = memos.length > 0 ? "#00FF00" : "";
-        
+        switch(fieldSize)
+        {
+          case 4:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#f6c400" : "";
+            break;
+          case 9:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#4cff38" : "";
+            break;
+          case 16:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#0cf4d1" : "";
+            break;
+          case 25:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#1f9aff" : "";
+            break;
+          case 36:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#5825f3" : "";
+            break;
+          case 49:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#d61feb" : "";
+            break;
+          case 64:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#f9147f" : "";
+            break;
+          case 81:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#fe5319" : "";
+            break;
+          case 100:
+            selectedCell.style.backgroundColor = memos.length > 0 ? "#ff0b0b" : "";
+            break;
+        }
         this.updateMemoButtons(); // ★ 追加：ボタン色を同期
         // ★ 最重要：フォーカスを消す（applyFocus に上書きさせない）
         this.clearFocus();
+      },
+      // ★ 新規追加：Select/Memoボタンの1辺サイズ(px)。
+      // パズルのセルより一回り大きめに確保（3桁数字の可読性のため）
+      calcButtonSize: function (fieldSize) {
+        if (fieldSize <= 4)  return 110;
+        if (fieldSize <= 9)  return 80;
+        if (fieldSize <= 16) return 64;
+        if (fieldSize <= 25) return 54;
+        if (fieldSize <= 36) return 48;
+        if (fieldSize <= 49) return 44;
+        if (fieldSize <= 64) return 40;
+        if (fieldSize <= 81) return 36;
+        return 34; // 100 (3桁の "100" まで考慮)
       },
       // -----------------------------
       // Delete
