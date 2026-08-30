@@ -34,39 +34,39 @@ h1 {
    枠CSS
    =============================== */
    .label-4{
-    color: #ffd700;
+    color: #f6c400;
     font-weight: bold;
   }
   .label-9{
-    color: #7fff00;
+    color: #4cff38;
     font-weight: bold;
   }
   .label-16{
-    color: #00fa9a;
+    color: #0cf4d1;
     font-weight: bold;
   }
   .label-25{
-    color: #00ffff;
+    color: #1f9aff;
     font-weight: bold;
   }
   .label-36{
-    color: #00bfff;
+    color: #5825f3;
     font-weight: bold;
   }
   .label-49{
-    color: #8a2be2;
+    color: #d61feb;
     font-weight: bold;
   }
   .label-64{
-    color: #9400d3;
+    color: #f9147f;
     font-weight: bold;
   }
   .label-81{
-    color: #ff00ff;
+    color: #fe5319;
     font-weight: bold;
   }
   .label-100{
-    color: #dc143c;
+    color: #ff0b0b;
     font-weight: bold;
   }
 
@@ -120,7 +120,7 @@ h1 {
   margin-top: 25px;
   font-size: 20px;
   font-weight: bold;
-  background-color: #b3ffb3;
+  background-color: #d7d7d7;
   border-radius: 10px;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
