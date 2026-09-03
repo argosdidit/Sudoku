@@ -4,8 +4,8 @@ const SudokuLevel = (() => {
   let func;
 
   const levelData = [
-    { label: "Easy (70%)", value: "easy" },
-    { label: "Hard (60%)", value: "hard" },
+    { label: "Easy (60%)", value: "easy" },
+    { label: "Hard (45%)", value: "hard" },
   ];
 
   const assistData = [
