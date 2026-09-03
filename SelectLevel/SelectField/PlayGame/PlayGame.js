@@ -334,7 +334,7 @@ const PlayGame = (() => {
       const size = solution.length;
       const totalCells = size * size;
       
-      const rate = level === "easy" ? 0.7 : 0.6;
+      const rate = level === "easy" ? 0.6 : 0.45;
       const filledCount = this.calcFilledCount(totalCells, rate);
       
       // 全セルの index を作る
