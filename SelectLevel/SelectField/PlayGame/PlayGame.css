@@ -73,8 +73,7 @@ body {
 
 /* 選択中セル */
 .cell.selected {
-  background-color: #e6f7ff;
-  border-color: #000;
+  background-color: #FFF;
 }
 
 /* 初期配置（変更不可） */
