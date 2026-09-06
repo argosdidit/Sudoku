@@ -14,6 +14,21 @@ body {
 }
 
 /* ===============================
+   ローディングオーバーレイ
+   =============================== */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 9999;
+}
+
+/* ===============================
    上部情報バー
    =============================== */
 #infoBar {
@@ -37,7 +52,7 @@ body {
   width: 100%;
   align-items: flex-start;
   justify-content: center;
-  flex-wrap: nowrap;        /* ★ 変更：改行させない */
+  flex-wrap: nowrap;
 }
 
 /* ===============================
@@ -49,8 +64,8 @@ body {
   padding: 10px;
   box-sizing: border-box;
   display: grid;
-  flex: 0 1 auto;            /* ★ 変更：必要なら縮小を許可 */
-  min-width: 0;              /* ★ 追加：Flexboxの暗黙の最小幅を解除（最重要） */
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: min(75vw, 900px);
   max-height: 80vh;
   overflow: auto;
@@ -120,7 +135,7 @@ body {
    右側（選択 + メモ）縦レイアウト
    =============================== */
 #areaRight {
-  flex: 0 0 auto;             /* 右側は縮めず、自身のサイズを維持 */
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -135,14 +150,11 @@ body {
   border: 2px solid #ccc;
   padding: 10px;
   box-sizing: border-box;
-  width: fit-content;          /* ★ 追加：内容サイズにフィット */
-  max-width: min(90vw, 600px); /* ★ 追加：極端な場合の保険 */
-  overflow: auto;              /* ★ 追加 */
+  width: fit-content;
+  max-width: min(90vw, 600px);
+  overflow: auto;
 }
 
-/* ===============================
-   選択領域
-   =============================== */
 #selectNumbers {
   display: grid;
   gap: 6px;
@@ -229,7 +241,7 @@ body {
    =============================== */
 @media (max-width: 900px) {
   #areaMain {
-    flex-wrap: wrap;         /* この範囲だけ改行を許可 */
+    flex-wrap: wrap;
     justify-content: center;
   }
   #areaPuzzle {

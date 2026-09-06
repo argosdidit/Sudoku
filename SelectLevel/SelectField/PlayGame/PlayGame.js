@@ -10,19 +10,31 @@ const PlayGame = (() => {
   let completedNumbers = new Set(); // ★ 完成済みの数字を記録
 
   const func = {
+    // ★ 唯一解保証を行う上限（これ以下ならcountSolutionsで厳密チェック）
+    UNIQUE_SOLUTION_LIMIT: 36,
+
     init: function () {
       this.loadParams();
       this.showHeaderInfo();
-      this.startTimer();
-      this.makePuzzle();
-      this.makeSelectNumbers();
-      this.makeMemoNumbers();
-      this.bindDelete();
 
-      // ★ 初期状態で既に完成している数字がないか確認
-      for (let i = 1; i <= fieldSize; i++) {
-        this.checkNumberComplete(i);
-      }
+      // ★ 描画を1フレーム待ってからパズル生成へ（ローディング表示を確実に見せるため）
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          this.startTimer();
+          this.makePuzzle();
+          this.makeSelectNumbers();
+          this.makeMemoNumbers();
+          this.bindDelete();
+
+          // ★ 初期状態で既に完成している数字がないか確認
+          for (let i = 1; i <= fieldSize; i++) {
+            this.checkNumberComplete(i);
+          }
+
+          const overlay = document.getElementById("loadingOverlay");
+          if (overlay) overlay.style.display = "none"; // ★ 生成完了後にローディングを消す
+        }, 0);
+      });
       return this;
     },
 
@@ -63,10 +75,10 @@ const PlayGame = (() => {
     highlightSelectedCell: function (cell) {
       document.querySelectorAll(".cell").forEach(c => {
         c.classList.remove("selected");
-        c.style.boxShadow = ""; // ★ 以前選択されていたセルの枠をリセット
+        c.style.boxShadow = "";
       });
       cell.classList.add("selected");
-      cell.style.boxShadow = `inset 0 0 0 3px ${this.colorForFieldSize(fieldSize)}`; // ★ 枠内をfieldSizeの色で強調
+      cell.style.boxShadow = `inset 0 0 0 3px ${this.colorForFieldSize(fieldSize)}`;
     },
 
     // ★ fieldSizeごとの基準色を一元管理
@@ -91,7 +103,7 @@ const PlayGame = (() => {
       const color = "#FFF";
       document.querySelectorAll(".numBtn, .memoBtn").forEach(btn => {
         btn.style.backgroundColor = color;
-        btn.style.color = color; // ★ 文字を背景と同化させ見えなくする
+        btn.style.color = color;
       });
     },
 
@@ -122,7 +134,7 @@ const PlayGame = (() => {
       document.querySelectorAll(".numBtn, .memoBtn").forEach(btn => {
         if (Number(btn.textContent) === n) {
           btn.style.backgroundColor = color;
-          btn.style.color = color; // ★ 文字を背景と同化させ見えなくする
+          btn.style.color = color;
         }
       });
     },
@@ -181,7 +193,7 @@ const PlayGame = (() => {
         if (memos.includes(Number(value))) {
           c.textContent = value;
           c.style.color = "#000";
-          c.classList.add("memo-preview"); // ★ clearFocusで戻すための目印
+          c.classList.add("memo-preview");
         }
       });
     },
@@ -392,21 +404,136 @@ const PlayGame = (() => {
       }
       return board;
     },
+
+    // ★ 解の個数を数える軽量ソルバー（limit個見つかった時点で打ち切り）
+    countSolutions: function (board, limit) {
+      const size = board.length;
+      const n = Math.sqrt(size);
+      let count = 0;
+
+      const isValid = (r, c, val) => {
+        for (let i = 0; i < size; i++) {
+          if (board[r][i] === val) return false;
+          if (board[i][c] === val) return false;
+        }
+        const br = Math.floor(r / n) * n;
+        const bc = Math.floor(c / n) * n;
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            if (board[br + i][bc + j] === val) return false;
+          }
+        }
+        return true;
+      };
+
+      const solve = () => {
+        if (count >= limit) return;
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (board[r][c] === 0) {
+              for (let val = 1; val <= size; val++) {
+                if (isValid(r, c, val)) {
+                  board[r][c] = val;
+                  solve();
+                  board[r][c] = 0;
+                  if (count >= limit) return;
+                }
+              }
+              return;
+            }
+          }
+        }
+        count++;
+      };
+
+      solve();
+      return count;
+    },
+
+    // ★ 振り分け役：fieldSizeに応じて唯一解保証 or 旧方式（ランダムのみ）を選択
     generatePuzzle: function(solution, level) {
       const size = solution.length;
       const totalCells = size * size;
 
-      const rate = level === "easy" ? 0.6 : 0.45;
+      const rate = level === "easy" ? 0.6 : 0.35;
       const filledCount = this.calcFilledCount(totalCells, rate);
+      const targetBlanks = totalCells - filledCount;
+
+      if (fieldSize <= this.UNIQUE_SOLUTION_LIMIT) {
+        return this.generatePuzzleUnique(solution, targetBlanks);
+      } else {
+        return this.generatePuzzleRandom(solution, targetBlanks);
+      }
+    },
+
+    // ★ 唯一解保証あり（複数回試行し、最も空欄が多かった結果を採用）
+    generatePuzzleUnique: function(solution, targetBlanks) {
+      const overallStart = performance.now();
+      const overallBudgetMs = 4000;
+
+      let bestPuzzle = solution.map(row => [...row]);
+      let bestBlanked = 0;
+
+      while (performance.now() - overallStart < overallBudgetMs) {
+        const { puzzle, blanked } = this.tryDigHoles(solution, targetBlanks, overallStart, overallBudgetMs);
+
+        if (blanked > bestBlanked) {
+          bestBlanked = blanked;
+          bestPuzzle = puzzle;
+        }
+        if (bestBlanked >= targetBlanks) break;
+      }
+
+      return bestPuzzle.map(row => row.map(v => v === 0 ? null : v));
+    },
+
+    // ★ 1回分の「穴あけ試行」
+    tryDigHoles: function(solution, targetBlanks, overallStart, overallBudgetMs) {
+      const size = solution.length;
+      const totalCells = size * size;
+      const puzzle = solution.map(row => [...row]);
 
       const indices = Array.from({ length: totalCells }, (_, i) => i);
-
       for (let i = indices.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [indices[i], indices[j]] = [indices[j], indices[i]];
       }
 
-      const keepSet = new Set(indices.slice(0, filledCount));
+      let blanked = 0;
+      for (const idx of indices) {
+        if (blanked >= targetBlanks) break;
+        if (performance.now() - overallStart > overallBudgetMs) break;
+
+        const r = Math.floor(idx / size);
+        const c = idx % size;
+        const backup = puzzle[r][c];
+        puzzle[r][c] = 0;
+
+        const testBoard = puzzle.map(row => [...row]);
+        const solCount = this.countSolutions(testBoard, 2);
+
+        if (solCount === 1) {
+          blanked++;
+        } else {
+          puzzle[r][c] = backup;
+        }
+      }
+
+      return { puzzle, blanked };
+    },
+
+    // ★ 旧方式（唯一解チェックなし、ランダムに目標数だけ空ける）
+    generatePuzzleRandom: function(solution, targetBlanks) {
+      const size = solution.length;
+      const totalCells = size * size;
+
+      const indices = Array.from({ length: totalCells }, (_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      const keepSet = new Set(indices.slice(targetBlanks)); // ★ 残すマス
       const puzzle = Array.from({ length: size }, () => Array(size).fill(null));
 
       for (let r = 0; r < size; r++) {
@@ -419,6 +546,7 @@ const PlayGame = (() => {
       }
       return puzzle;
     },
+
     calcFilledCount: function(totalCells, rate) {
       const raw = totalCells * rate;
 
@@ -632,10 +760,96 @@ const PlayGame = (() => {
         }
       },
       endGame: function (result) {
-        clearInterval(timerId);
-        this.disableInputButtons();
-        window.location.href = `../ShowResult/ShowResult.html?result=${result}&time=${timer}`;
-      },
+  clearInterval(timerId);
+  this.disableInputButtons();
+
+  // ★ 盤面をPNG化してsessionStorageへ保存
+  try {
+    const puzzleImage = this.capturePuzzleImage();
+    sessionStorage.setItem("resultPuzzleImage", puzzleImage);
+  } catch (e) {
+    console.error("盤面画像の保存に失敗しました:", e);
+  }
+
+  const params = new URLSearchParams({
+    result: result,
+    time: timer,
+    level: level,
+    assist: assist,
+    miss: missCount,
+    missLimit: missLimit,
+    field: fieldSize, // ★ 追加：もう一度トライ時の再生成に必須
+  });
+
+  window.location.href = `ShowResult/ShowResult.html?${params.toString()}`;
+},
+      calcExportCellSize: function (fieldSize) {
+  if (fieldSize <= 9)  return 60;
+  if (fieldSize <= 25) return 40;
+  if (fieldSize <= 49) return 24;
+  if (fieldSize <= 81) return 16;
+  return 12; // 100
+},
+capturePuzzleImage: function () {
+  const cells = document.querySelectorAll(".cell");
+  const exportPx = this.calcExportCellSize(fieldSize);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = fieldSize * exportPx;
+  canvas.height = fieldSize * exportPx;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  cells.forEach(cell => {
+    const r = Number(cell.dataset.row);
+    const c = Number(cell.dataset.col);
+    const x = c * exportPx;
+    const y = r * exportPx;
+
+    const style = getComputedStyle(cell);
+
+    // セル背景
+    ctx.fillStyle = style.backgroundColor;
+    ctx.fillRect(x, y, exportPx, exportPx);
+
+    // 通常の細枠
+    ctx.strokeStyle = "#ccc";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, exportPx, exportPx);
+
+    // ブロック境界（太枠）
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = Math.max(1, exportPx * 0.06);
+    ctx.beginPath();
+    if (cell.classList.contains("block-top")) {
+      ctx.moveTo(x, y); ctx.lineTo(x + exportPx, y);
+    }
+    if (cell.classList.contains("block-left")) {
+      ctx.moveTo(x, y); ctx.lineTo(x, y + exportPx);
+    }
+    if (cell.classList.contains("block-bottom")) {
+      ctx.moveTo(x, y + exportPx); ctx.lineTo(x + exportPx, y + exportPx);
+    }
+    if (cell.classList.contains("block-right")) {
+      ctx.moveTo(x + exportPx, y); ctx.lineTo(x + exportPx, y + exportPx);
+    }
+    ctx.stroke();
+
+    // 数字
+    const text = cell.textContent;
+    if (text) {
+      ctx.fillStyle = style.color;
+      ctx.font = `bold ${Math.floor(exportPx * 0.5)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + exportPx / 2, y + exportPx / 2);
+    }
+  });
+
+  return canvas.toDataURL("image/png");
+},
     };
     const active = () => {
     func.init();
