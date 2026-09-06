@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Result</title>
+  <link rel="stylesheet" href="ShowResult.css">
+</head>
+<body>
+  <div class="container">
+    <h1 id="resultTitle"></h1>
+
+    <div id="infoBox">
+      <div class="infoRow">
+        <span class="infoLabel">Level</span>
+        <span id="valLevel" class="infoValue"></span>
+      </div>
+      <div class="infoRow">
+        <span class="infoLabel">Assist</span>
+        <span id="valAssist" class="infoValue"></span>
+      </div>
+      <div class="infoRow">
+        <span class="infoLabel">Time</span>
+        <span id="valTime" class="infoValue"></span>
+      </div>
+      <div class="infoRow">
+        <span class="infoLabel">Miss</span>
+        <span id="valMiss" class="infoValue"></span>
+      </div>
+    </div>
+
+    <div id="puzzleBox">
+      <img id="puzzleImage" alt="Puzzle Result">
+    </div>
+
+    <div id="actions">
+      <button id="btnDownload">PNGを保存</button>
+      <button id="btnRetry">もう一度トライ</button>
+      <button id="btnTop">TOPに戻る</button>
+    </div>
+  </div>
+  <script src="ShowResult.js"></script>
+</body>
+</html>
