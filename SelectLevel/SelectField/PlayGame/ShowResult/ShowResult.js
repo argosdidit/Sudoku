@@ -28,11 +28,23 @@ const ShowResult = (() => {
 
     document.getElementById("btnDownload").addEventListener("click", () => {
       if (!dataUrl) return;
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = "sudoku_result.png";
-      a.click();
-    });
+
+  // ★ 追加：ファイル名生成
+  const n = Math.sqrt(Number(field)); // 例: field=16 → n=4
+  const now = new Date();
+  const pad = (num) => String(num).padStart(2, "0");
+  const dateStr =
+    `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const timeStr =
+    `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+  const fileName = `sudoku_result_${n}^2_${dateStr}_${timeStr}.png`;
+
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = fileName; // ★ 変更：固定文字列だったdownload属性を動的生成に
+  a.click();
+});
 
     // ★ 追加：もう一度トライ → 同じ設定でPlayGameへ
     document.getElementById("btnRetry").addEventListener("click", () => {
